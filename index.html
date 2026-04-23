@@ -3,104 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>Chatbot Interface</title>
+    <title>Chatbot Rian</title>
     <style>
         body {
-            margin: 0;
             font-family: Arial, sans-serif;
-            transition: background-color 0.3s;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
+            background-color: #f0f0f0;
+            color: #333;
+            margin: 0;
             padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
-        .chatbox {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            height: 400px;
-            overflow-y: scroll;
-            background-color: var(--bg-color);
-        }
-        .input-area {
-            display: flex;
-            margin-top: 10px;
-        }
-        .input-area input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        .input-area button {
-            padding: 10px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .settings {
-            margin-top: 20px;
-        }
-        .settings input {
-            margin-right: 10px;
-        }
-        .theme-switch {
-            cursor: pointer;
-            padding: 10px;
-            border: none;
-            background-color: #f1f1f1;
-            border-radius: 5px;
-        }
-        /* Dark theme styles */
-        body.dark {
+        .dark-theme {
             background-color: #333;
-            color: white;
+            color: #f0f0f0;
         }
-        .chatbox.dark {
-            background-color: #444;
-            border: 1px solid #555;
+        #chat {
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+            background-color: white;
+        }
+        .menu {
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Chatbot</h1>
-        <div class="chatbox" id="chatbox"></div>
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Type your message...">
-            <button onclick="sendMessage()">Send</button>
-        </div>
-        <div class="settings">
-            <input type="text" id="apiKey" placeholder="Enter your API key">
-            <button class="theme-switch" onclick="toggleTheme()">Switch to Dark Theme</button>
-        </div>
+    <div class="menu">
+        <button id="theme-toggle">Toggle Dark/Light Theme</button>
+        <input type="text" id="api-key" placeholder="Enter API Key" />
     </div>
-    <script>
-        let isDarkTheme = false;
-        const chatbox = document.getElementById('chatbox');
-        const userInput = document.getElementById('userInput');
-        const apiKeyInput = document.getElementById('apiKey');
+    <h1>Chatbot Rian</h1>
+    <div id="chat"></div>
+    <input type="text" id="user-input" placeholder="Type your message..." />
+    <button id="send-button">Send</button>
 
+    <script>
+        let chatHistory = [];
+        const chatDiv = document.getElementById('chat');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const apiKeyInput = document.getElementById('api-key');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        // Function to send message
         function sendMessage() {
             const message = userInput.value;
             if (message) {
-                const messageDiv = document.createElement('div');
-                messageDiv.textContent = `User: ${message}`;
-                chatbox.appendChild(messageDiv);
-                userInput.value = '';  
-                // Call your API here using apiKeyInput.value
+                chatHistory.push(`User: ${message}`);
+                updateChat();
+                userInput.value = '';
+                // Here you would add code to send the message using the API key
             }
         }
 
-        function toggleTheme() {
-            isDarkTheme = !isDarkTheme;
-            document.body.classList.toggle('dark', isDarkTheme);
-            chatbox.classList.toggle('dark', isDarkTheme);
+        // Function to update the chat window
+        function updateChat() {
+            chatDiv.innerHTML = chatHistory.join('<br>');
+            chatDiv.scrollTop = chatDiv.scrollHeight;
         }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+        });
     </script>
 </body>
 </html>
