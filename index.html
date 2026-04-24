@@ -41,9 +41,9 @@ body{height:100%;height:-webkit-fill-available;width:100%;overflow:hidden;backgr
 #wallpaper{position:absolute;inset:0;z-index:0;background-size:cover;background-position:center;opacity:0.12;pointer-events:none}
 
 /* ── SIDEBAR ── */
-#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;backdrop-filter:blur(2px)}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200}
 #sidebar-overlay.open{display:block}
-#sidebar{position:fixed;top:0;left:0;height:100%;width:var(–sidebar-w);background:var(–surface);border-right:1px solid var(–border);z-index:201;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow-y:auto;-webkit-backdrop-filter:none;backdrop-filter:none}
+#sidebar{position:fixed;top:0;left:0;height:100%;width:var(–sidebar-w);background:var(–surface);border-right:1px solid var(–border);z-index:201;transform:translateX(-100%);transition:transform .25s ease;display:flex;flex-direction:column;overflow-y:auto;isolation:isolate}
 #sidebar.open{transform:translateX(0)}
 .sidebar-header{padding:18px 16px 12px;border-bottom:1px solid var(–border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .sidebar-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0}
@@ -84,8 +84,8 @@ body{height:100%;height:-webkit-fill-available;width:100%;overflow:hidden;backgr
 .bot-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;flex-shrink:0;margin-bottom:2px}
 .bot-name{font-size:12px;color:var(–text-muted);margin-left:36px;margin-bottom:3px}
 .bubble{padding:11px 14px;border-radius:var(–radius);font-size:17px;line-height:1.55;word-break:break-word;white-space:pre-wrap}
-.msg-group.user .bubble{background:var(–user-bubble);border-bottom-right-radius:5px;color:#ffffff !important}
-.msg-group.bot .bubble{background:var(–bot-bubble);border-bottom-left-radius:5px;color:var(–text) !important;border:1px solid var(–border)}
+.msg-group.user .bubble{background:var(–user-bubble) !important;border-bottom-right-radius:5px;color:#fff !important}
+.msg-group.bot .bubble{background:var(–bot-bubble) !important;border-bottom-left-radius:5px;color:var(–text) !important;border:1px solid var(–border)}
 .bubble.editing{outline:2px solid var(–accent);cursor:text}
 
 /* date divider */
@@ -123,17 +123,17 @@ body{height:100%;height:-webkit-fill-available;width:100%;overflow:hidden;backgr
 #send-btn svg{width:20px;height:20px}
 
 /* ── SETTINGS ── */
-#settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;backdrop-filter:blur(4px)}
+#settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300}
 #settings-overlay.open{display:flex;align-items:flex-end}
-#settings-panel{width:100%;background:var(–surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;border-top:1px solid var(–border);animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
+#settings-panel{width:100%;background:var(–surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;border-top:1px solid var(–border);animation:slideUp .25s ease;max-height:88vh;overflow-y:auto;isolation:isolate}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .settings-handle{width:36px;height:4px;background:var(–border);border-radius:2px;margin:0 auto 20px}
 .settings-title{font-size:18px;font-weight:600;margin-bottom:18px}
 .settings-section{margin-bottom:22px}
 .settings-label{font-size:12px;color:var(–text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
 .theme-options{display:flex;gap:8px}
-.theme-opt{flex:1;padding:10px 4px;border-radius:12px;border:1.5px solid var(–border);background:none;color:var(–text-muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:center;transition:all .2s;font-weight:500}
-.theme-opt.active{border-color:var(–accent);color:var(–text);background:var(–surface2);font-weight:600}
+.theme-opt{flex:1;padding:11px 4px;border-radius:12px;border:2px solid var(–border);background:var(–surface2);color:var(–text-muted);font-family:inherit;font-size:14px;cursor:pointer;text-align:center;transition:all .15s;font-weight:500}
+.theme-opt.active{border-color:var(–accent);color:#fff;background:var(–accent);font-weight:600}
 .memory-list{display:flex;flex-direction:column;gap:8px;max-height:140px;overflow-y:auto}
 .memory-item{background:var(–surface2);border-radius:10px;padding:9px 12px;font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .memory-item span{flex:1;color:var(–text)}
@@ -149,9 +149,9 @@ body{height:100%;height:-webkit-fill-available;width:100%;overflow:hidden;backgr
 .wallpaper-opt.active{border-color:var(–accent)}
 .wallpaper-upload{width:56px;height:56px;border-radius:12px;border:2px dashed var(–border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(–text-muted);font-size:24px;flex-shrink:0}
 
-#profile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;backdrop-filter:blur(4px)}
+#profile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300}
 #profile-overlay.open{display:flex;align-items:flex-end}
-#profile-panel{width:100%;background:var(–surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;border-top:1px solid var(–border);animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
+#profile-panel{width:100%;background:var(–surface);border-radius:20px 20px 0 0;padding:20px 20px 40px;border-top:1px solid var(–border);animation:slideUp .25s ease;max-height:88vh;overflow-y:auto;isolation:isolate}
 
 /* no key */
 #no-key-screen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:16px;text-align:center;position:relative;z-index:1}
@@ -360,6 +360,7 @@ let isRecording = false;
 let initiated = false;
 
 // ── INIT ──
+document.documentElement.style.setProperty("color-scheme", "dark");
 applyTheme(currentTheme);
 applyWallpaper(currentWallpaper);
 document.getElementById('model-select').value = currentModel;
