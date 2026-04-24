@@ -806,7 +806,16 @@ function renderProfileMemory() {
  list.innerHTML = memory.map((m,i) => `<div class="memory-item"><span>${m}</span><button class="memory-del" onclick="deleteMem(${i});renderProfileMemory()"></button></div>`).join('');
 }
 
-// 
+// ── CENSORSHIP ──
+function setCensor(val) {
+ localStorage.setItem('censor', val);
+ document.getElementById('censor-on').classList.toggle('active', val === 'on');
+ document.getElementById('censor-off').classList.toggle('active', val === 'off');
+}
+// init censor buttons
+const censorVal = localStorage.getItem('censor') || 'off';
+document.getElementById('censor-on').classList.toggle('active', censorVal === 'on');
+document.getElementById('censor-off').classList.toggle('active', censorVal === 'off');
 
 function getTime() { return new Date().toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' }); }
 setTimeout(() => { if (groqKey) inputEl.focus(); }, 300);
