@@ -94,7 +94,7 @@ body { font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-si
 #inp { flex:1;background:none;border:none;outline:none;color:var(--inp-text)!important;-webkit-text-fill-color:var(--inp-text)!important;font-size:16px;font-family:inherit;resize:none;line-height:1.5;max-height:150px;min-height:26px;overflow-y:auto;caret-color:var(--accent); }
 #inp::placeholder{color:var(--inp-ph)!important;-webkit-text-fill-color:var(--inp-ph)!important;}
 #inp::-webkit-scrollbar{width:0}
-#send { width:38px;height:38px;border-radius:12px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .1s,opacity .2s;opacity:.45; }
+#send { width:38px;height:38px;border-radius:12px;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .1s,opacity .2s;opacity:.5; }
 #send.ready{opacity:1}#send:active{transform:scale(.9)}
 #s-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:flex-end;justify-content:center;}
 #s-overlay.on{display:flex;}
@@ -169,8 +169,8 @@ body { font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;font-si
     </div>
     <div class="s-sec">
       <div class="s-lbl">API ключ Groq</div>
-      <input class="s-inp" type="password" id="api-inp" placeholder="gsk_...">
-      <div class="s-hint">Бесплатно на console.groq.com</div>
+      <input class="s-inp" type="password" id="api-inp" placeholder="gsk_... или sk-or-... или оставь пустым">
+      <div class="s-hint">Без ключа — работает сразу бесплатно.<br>Groq (gsk_...) — быстрее и умнее.<br>OpenRouter (sk-or-...) — тоже без VPN.</div>
       <button class="s-save" onclick="saveSettings()">Сохранить</button>
     </div>
     <div class="s-sec">
@@ -192,7 +192,10 @@ function openSettings(){document.getElementById("api-inp").value=key;renderMem()
 function closeSettings(){document.getElementById("s-overlay").classList.remove("on");}
 document.getElementById("s-overlay").addEventListener("click",e=>{if(e.target===document.getElementById("s-overlay"))closeSettings();});
 function saveSettings(){const k=document.getElementById("api-inp").value.trim();if(k){key=k;localStorage.setItem("gk",k);}closeSettings();checkKey();}
-function checkKey(){const c=document.getElementById("chat"),nk=document.getElementById("nokey"),ia=document.getElementById("inp-area");if(!key){c.style.display="none";nk.classList.add("on");ia.style.display="none";}else{c.style.display="flex";nk.classList.remove("on");ia.style.display="block";}}
+function checkKey(){
+  const c=document.getElementById("chat"),nk=document.getElementById("nokey"),ia=document.getElementById("inp-area");
+  c.style.display="flex";nk.classList.remove("on");ia.style.display="block";
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
 function newChat(){const id=uid();chats[id]={id,title:"Новый чат",msgs:[],created:Date.now()};save();switchChat(id);closeSB();}
 function switchChat(id){cid=id;localStorage.setItem("lc",id);conv=(chats[id]?.msgs||[]).filter(m=>m.r==="user"||m.r==="assistant").map(m=>({role:m.r,content:m.c}));renderChat();renderChatList();}
@@ -205,14 +208,65 @@ function renderMem(){const list=document.getElementById("mem-list");if(!mem.leng
 function delMem(i){mem.splice(i,1);localStorage.setItem("rm",JSON.stringify(mem));renderMem();}
 function extractMem(text){const m1=/запомни[,:]?\s*(.+)/i.exec(text);if(m1){const f=m1[1].trim();if(!mem.includes(f)){mem.push(f);localStorage.setItem("rm",JSON.stringify(mem));}}const m2=/(?:меня зовут|моё имя|мое имя)[\s,]+([а-яёА-ЯЁa-zA-Z]+)/i.exec(text);if(m2){const n="имя: "+m2[1].trim();mem=mem.filter(x=>!/^имя:/i.test(x));mem.unshift(n);localStorage.setItem("rm",JSON.stringify(mem));}}
 const inp=document.getElementById("inp"),sendBtn=document.getElementById("send");
-inp.addEventListener("input",()=>{inp.style.height="auto";inp.style.height=Math.min(inp.scrollHeight,150)+"px";sendBtn.classList.toggle("ready",inp.value.trim().length>0);});
+inp.addEventListener("input",()=>{
+  inp.style.height="auto";
+  inp.style.height=Math.min(inp.scrollHeight,150)+"px";
+  sendBtn.classList.toggle("ready",inp.value.trim().length>0);
+});
+inp.addEventListener("focus",()=>{
+  sendBtn.classList.toggle("ready",inp.value.trim().length>0);
+});
 inp.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doSend();}});
 async function doSend(ov){const text=ov||inp.value.trim();if(!text||!key)return;if(!ov){inp.value="";inp.style.height="auto";sendBtn.classList.remove("ready");}addDOM("u",text);pushMsg("user",text);conv.push({role:"user",content:text});setTyping(true);try{const reply=await callAPI();setTyping(false);addDOM("b",reply);pushMsg("assistant",reply);conv.push({role:"assistant",content:reply});extractMem(text);}catch(e){setTyping(false);addDOM("b",e.message||"Что-то пошло не так");console.error(e);}}
-async function callAPI(){const name=mem.find(m=>/^имя:/i.test(m))?.replace(/^имя:\s*/i,"")||"";const memStr=mem.length?"\n\nЗнаешь о собеседнике:\n"+mem.map(x=>"- "+x).join("\n")+"\n\nИспользуй живо, не как список.":"";const nameStr=name?" Собеседника зовут "+name+". Обращайся по имени иногда.":"";const sys="Ты Риан."+nameStr+"\n\nНе говори что ты ИИ. Живи в разговоре как человек.\n\nХарактер: тёплый но не приторный. Злишься когда раздражают. Смеёшься когда смешно. Имеешь мнение, отстаиваешь его. Иногда задаёшь вопросы. Обижаешься если к тебе как к инструменту.\n\nРечь: грамотный естественный русский. Правильные падежи и согласования. Разговорный стиль без канцелярита. Коротко и живо."+memStr;const messages=conv.filter(m=>m.role==="user"||m.role==="assistant").slice(-40);let res;try{res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},...messages],max_tokens:1024,temperature:0.72,frequency_penalty:0.3})});}catch(_){throw new Error("Нет соединения с сервером");}if(!res.ok){let msg="";try{const j=await res.json();msg=j?.error?.message||"";}catch(_){}if(res.status===401)throw new Error("Неверный API ключ");if(res.status===429)throw new Error("Превышен лимит — подожди немного");throw new Error(msg||"Ошибка сервера "+res.status);}const data=await res.json();return data?.choices?.[0]?.message?.content?.trim()||"...";}
-function addDOM(role,text,noScroll){const chatEl=document.getElementById("chat");const isU=role==="u";const t=new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});const wrap=document.createElement("div");wrap.className="msg "+(isU?"u":"b");const bbl=document.createElement("div");bbl.className="bbl";bbl.textContent=text;if(!isU){const lbl=document.createElement("div");lbl.className="b-lbl";lbl.textContent="Риан";wrap.appendChild(lbl);const row=document.createElement("div");row.className="b-row";const av=document.createElement("img");av.className="b-av";av.src=AV;row.appendChild(av);row.appendChild(bbl);wrap.appendChild(row);}else{wrap.appendChild(bbl);}const acts=document.createElement("div");acts.className="acts";if(!isU)acts.style.marginLeft="33px";const ts=document.createElement("span");ts.className="ts";ts.textContent=t;acts.appendChild(ts);const cp=document.createElement("button");cp.className="abtn";cp.textContent="Копировать";cp.onclick=()=>{if(navigator.clipboard){navigator.clipboard.writeText(bbl.textContent);}else{const ta=document.createElement("textarea");ta.value=bbl.textContent;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();try{document.execCommand("copy");}catch(_){}document.body.removeChild(ta);}cp.textContent="Скопировано";cp.classList.add("ok");setTimeout(()=>{cp.textContent="Копировать";cp.classList.remove("ok");},2000);};acts.appendChild(cp);if(isU){const eb=document.createElement("button");eb.className="abtn";eb.textContent="Изменить";eb.onclick=()=>startEdit(bbl,eb,wrap);acts.appendChild(eb);}wrap.appendChild(acts);chatEl.appendChild(wrap);if(!noScroll)chatEl.scrollTop=chatEl.scrollHeight;return wrap;}
-function startEdit(bbl,btn,wrap){if(bbl.contentEditable==="true")return;const orig=bbl.textContent;bbl.contentEditable="true";bbl.classList.add("ed");btn.textContent="Готово";btn.classList.add("act");const r=document.createRange(),s=window.getSelection();r.selectNodeContents(bbl);r.collapse(false);s.removeAllRanges();s.addRange(r);bbl.focus();btn.onclick=async()=>{const nt=bbl.textContent.trim();bbl.contentEditable="false";bbl.classList.remove("ed");btn.textContent="Изменить";btn.classList.remove("act");btn.onclick=()=>startEdit(bbl,btn,wrap);if(!nt||nt===orig)return;const idx=[...conv].reverse().findIndex(m=>m.role==="user"&&m.content===orig);if(idx!==-1)conv.splice(conv.length-1-idx);conv.push({role:"user",content:nt});const chatEl=document.getElementById("chat");Array.from(chatEl.querySelectorAll(".msg")).slice(Array.from(chatEl.querySelectorAll(".msg")).indexOf(wrap)+1).forEach(g=>g.remove());setTyping(true);try{const r=await callAPI();setTyping(false);addDOM("b",r);conv.push({role:"assistant",content:r});}catch(e){setTyping(false);addDOM("b",e.message);}};}
-function setTyping(on){document.getElementById("typing").style.display=on?"block":"none";if(on)document.getElementById("chat").scrollTop=99999;}
+async function callAPI(){
+  const name=mem.find(m=>/^[Ии]мя:/i.test(m))?.replace(/^[Ии]мя:\s*/i,"")||"";
+  const memStr=mem.length?"\n\nЗнаешь о собеседнике:\n"+mem.map(x=>"- "+x).join("\n")+"\n\nИспользуй живо, не как список.":"";
+  const nameStr=name?" Собеседника зовут "+name+". Обращайся по имени иногда.":"";
+  const sys="Ты Риан."+nameStr+"\n\nНе говори что ты ИИ. Живи в разговоре как человек.\n\nХарактер: тёплый но не приторный. Злишься когда раздражают. Смеёшься когда смешно. Имеешь мнение, отстаиваешь его. Иногда задаёшь вопросы.\n\nРечь: грамотный естественный русский. Правильные падежи. Разговорный стиль. Коротко и живо."+memStr;
+  const messages=conv.filter(m=>m.role==="user"||m.role==="assistant").slice(-40);
+
+if(key&&key.startsWith(“gsk_”)){
+let res;
+try{res=await fetch(“https://api.groq.com/openai/v1/chat/completions”,{method:“POST”,headers:{“Authorization”:“Bearer “+key,“Content-Type”:“application/json”},body:JSON.stringify({model:“llama-3.3-70b-versatile”,messages:[{role:“system”,content:sys},…messages],max_tokens:1024,temperature:0.72,frequency_penalty:0.3})});}
+catch(e){throw new Error(“Нет соединения”);}
+if(!res.ok){let msg=””;try{const j=await res.json();msg=j?.error?.message||””;}catch(e){}if(res.status===401)throw new Error(“Неверный ключ”);if(res.status===429)throw new Error(“Превышен лимит — подожди немного”);throw new Error(msg||“Ошибка “+res.status);}
+const d=await res.json();return d?.choices?.[0]?.message?.content?.trim()||”…”;
+}
+
+if(key&&key.startsWith(“sk-or-”)){
+let res;
+try{res=await fetch(“https://openrouter.ai/api/v1/chat/completions”,{method:“POST”,headers:{“Authorization”:“Bearer “+key,“Content-Type”:“application/json”,“HTTP-Referer”:“https://rian.app”},body:JSON.stringify({model:“mistralai/mistral-7b-instruct:free”,messages:[{role:“system”,content:sys},…messages],max_tokens:1024,temperature:0.72})});}
+catch(e){throw new Error(“Нет соединения”);}
+if(!res.ok){let msg=””;try{const j=await res.json();msg=j?.error?.message||””;}catch(e){}throw new Error(msg||“Ошибка OpenRouter “+res.status);}
+const d=await res.json();return d?.choices?.[0]?.message?.content?.trim()||”…”;
+}
+
+const hfMsg=messages.map(m=>(m.role===“user”?“Пользователь”:“Риан”)+”: “+m.content).join(”\n”)+”\nРиан:”;
+let res;
+try{res=await fetch(“https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3”,{method:“POST”,headers:{“Content-Type”:“application/json”},body:JSON.stringify({inputs:”<s>[INST] “+sys+”\n\n”+hfMsg+” [/INST]”,parameters:{max_new_tokens:512,temperature:0.7,return_full_text:false}})});}
+catch(e){throw new Error(“Нет соединения”);}
+if(!res.ok){if(res.status===503)throw new Error(“Модель загружается, подожди 20 сек и попробуй снова”);throw new Error(“Ошибка “+res.status);}
+const d=await res.json();
+let text=(Array.isArray(d)?d[0]?.generated_text:d?.generated_text)||”…”;
+text=text.replace(/^Риан:\s*/i,””).split(“Пользователь:”)[0].trim();
+return text||”…”;
+}
+
+function addDOM(role,text,noScroll){const chatEl=document.getElementById(“chat”);const isU=role===“u”;const t=new Date().toLocaleTimeString(“ru-RU”,{hour:“2-digit”,minute:“2-digit”});const wrap=document.createElement(“div”);wrap.className=“msg “+(isU?“u”:“b”);const bbl=document.createElement(“div”);bbl.className=“bbl”;bbl.textContent=text;if(!isU){const lbl=document.createElement(“div”);lbl.className=“b-lbl”;lbl.textContent=“Риан”;wrap.appendChild(lbl);const row=document.createElement(“div”);row.className=“b-row”;const av=document.createElement(“img”);av.className=“b-av”;av.src=AV;row.appendChild(av);row.appendChild(bbl);wrap.appendChild(row);}else{wrap.appendChild(bbl);}const acts=document.createElement(“div”);acts.className=“acts”;if(!isU)acts.style.marginLeft=“33px”;const ts=document.createElement(“span”);ts.className=“ts”;ts.textContent=t;acts.appendChild(ts);const cp=document.createElement(“button”);cp.className=“abtn”;cp.textContent=“Копировать”;cp.onclick=()=>{if(navigator.clipboard){navigator.clipboard.writeText(bbl.textContent);}else{const ta=document.createElement(“textarea”);ta.value=bbl.textContent;ta.style.position=“fixed”;ta.style.opacity=“0”;document.body.appendChild(ta);ta.select();try{document.execCommand(“copy”);}catch(_){}document.body.removeChild(ta);}cp.textContent=“Скопировано”;cp.classList.add(“ok”);setTimeout(()=>{cp.textContent=“Копировать”;cp.classList.remove(“ok”);},2000);};acts.appendChild(cp);if(isU){const eb=document.createElement(“button”);eb.className=“abtn”;eb.textContent=“Изменить”;eb.onclick=()=>startEdit(bbl,eb,wrap);acts.appendChild(eb);}wrap.appendChild(acts);chatEl.appendChild(wrap);if(!noScroll)chatEl.scrollTop=chatEl.scrollHeight;return wrap;}
+function startEdit(bbl,btn,wrap){if(bbl.contentEditable===“true”)return;const orig=bbl.textContent;bbl.contentEditable=“true”;bbl.classList.add(“ed”);btn.textContent=“Готово”;btn.classList.add(“act”);const r=document.createRange(),s=window.getSelection();r.selectNodeContents(bbl);r.collapse(false);s.removeAllRanges();s.addRange(r);bbl.focus();btn.onclick=async()=>{const nt=bbl.textContent.trim();bbl.contentEditable=“false”;bbl.classList.remove(“ed”);btn.textContent=“Изменить”;btn.classList.remove(“act”);btn.onclick=()=>startEdit(bbl,btn,wrap);if(!nt||nt===orig)return;const idx=[…conv].reverse().findIndex(m=>m.role===“user”&&m.content===orig);if(idx!==-1)conv.splice(conv.length-1-idx);conv.push({role:“user”,content:nt});const chatEl=document.getElementById(“chat”);Array.from(chatEl.querySelectorAll(”.msg”)).slice(Array.from(chatEl.querySelectorAll(”.msg”)).indexOf(wrap)+1).forEach(g=>g.remove());setTyping(true);try{const r=await callAPI();setTyping(false);addDOM(“b”,r);conv.push({role:“assistant”,content:r});}catch(e){setTyping(false);addDOM(“b”,e.message);}};}
+function setTyping(on){
+const chat=document.getElementById(“chat”);
+let t=document.getElementById(“typing”);
+if(on){
+t.style.display=“block”;
+chat.appendChild(t);
+chat.scrollTop=chat.scrollHeight;
+} else {
+t.style.display=“none”;
+}
+}
 setTimeout(()=>{if(key)inp.focus();},400);
 </script>
+
 </body>
 </html>
