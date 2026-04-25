@@ -156,6 +156,8 @@ color: var(–text);
 }
 .msg.u .bbl { background: var(–user-bg); color:#fff !important; border-bottom-right-radius:4px; }
 .msg.b .bbl { background: var(–bot-bg); border:1px solid var(–border); border-bottom-left-radius:4px; color: var(–text) !important; }
+body.light .msg.b .bbl { color: #1a1a2e !important; -webkit-text-fill-color: #1a1a2e !important; }
+body.light .msg.u .bbl { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
 
 .bbl.ed { outline: 2px solid var(–accent); cursor:text; }
 
@@ -200,12 +202,12 @@ display: flex; align-items:flex-end; gap:8px; flex-shrink:0;
 }
 #inp-wrap {
 flex:1; background:var(–input-bg);
-border:1px solid var(–border);
+border:2px solid var(–border);
 border-radius:22px;
 display:flex; align-items:flex-end;
 padding:8px 14px; transition:border-color .2s;
 }
-#inp-wrap:focus-within { border-color:var(–accent); }
+#inp-wrap:focus-within { border-color:var(–accent); border-width:2px; }
 #inp {
 flex:1; background:none; border:none; outline:none;
 color:var(–text) !important; -webkit-text-fill-color:var(–text) !important;
@@ -214,7 +216,7 @@ resize:none; line-height:1.4;
 max-height:120px; min-height:24px;
 overflow-y:auto; caret-color:var(–accent);
 }
-#inp::placeholder { color:var(–text2); -webkit-text-fill-color:var(–text2); }
+#inp::placeholder { color:var(–text2); -webkit-text-fill-color:var(–text2) !important; }
 #inp::-webkit-scrollbar{width:0}
 #send {
 width:40px; height:40px; border-radius:50%;
@@ -410,7 +412,7 @@ function applyTheme(t) {
     '--border':'#dde0e8','--text':'#1a1a2e','--text2':'#888',
     '--user-bg':'#2563eb','--bot-bg':'#ffffff',
     '--btn-bg':'#ebebf0','--btn-border':'#dde0e8','--btn-text':'#666',
-    '--input-bg':'#ebebf0','--accent':'#2563eb'
+    '--input-bg':'#ebebf0','--accent':'#2563eb','--border-focus':'#2563eb'
   };
   const root = document.documentElement;
   Object.entries(vars).forEach(([k,v]) => root.style.setProperty(k, v));
@@ -572,11 +574,11 @@ async function callAPI() {
 
 Тёплый но не приторный. Злишься когда раздражают. Смеёшься когда смешно. Имеешь мнение. Коротко и живо.${memStr}`;
 
-  const messages = conv.filter(m=>m.role==='user'||m.role==='assistant').slice(-20);
+  const messages = conv.filter(m=>m.role==='user'||m.role==='assistant').slice(-40);
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method:'POST',
     headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
-    body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'system',content:sys},...messages],max_tokens:1024,temperature:.85})
+    body:JSON.stringify({model:'llama-3.1-8b-instant',messages:[{role:'system',content:sys},...messages],max_tokens:1024,temperature:0.7,frequency_penalty:0.3})
   });
   if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||res.status); }
   const data = await res.json();
@@ -646,4 +648,3 @@ setTimeout(()=>{ if(key) inp.focus(); },300);
 
 </body>
 </html>
-
