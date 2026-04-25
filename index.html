@@ -437,7 +437,15 @@ function startEdit(bbl,btn,wrap){if(bbl.contentEditable==="true")return;const or
 function setTyping(on){document.getElementById("typing").style.display=on?"block":"none";if(on)document.getElementById("chat").scrollTop=99999;}
 
 setTimeout(()=>{if(key)inp.focus();},400);
+window.addEventListener("load", function () {
+  var avatarSrc = "data:image/jpeg;base64," + AV;
 
+  var sb = document.getElementById("sb-av");
+  var hd = document.getElementById("h-av");
+
+  if (sb) sb.src = avatarSrc;
+  if (hd) hd.src = avatarSrc;
+});
 </script>
 
 </body>
