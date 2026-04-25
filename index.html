@@ -13,6 +13,7 @@ html { height: -webkit-fill-available; }
 
 /* THEMES */
 body {
+color-scheme: dark;
 –bg: #0f0f11;
 –surface: #161618;
 –surface2: #1e1e22;
@@ -37,6 +38,7 @@ overflow: hidden;
 display: flex;
 }
 body.light {
+color-scheme: light;
 –bg: #f5f5f7;
 –surface: #ffffff;
 –surface2: #f0f0f5;
@@ -397,6 +399,7 @@ function setTheme(t) {
 }
 function applyTheme(t) {
   document.body.classList.toggle('light', t==='light');
+  document.body.style.colorScheme = t==='light' ? 'light' : 'dark';
   document.getElementById('t-dark').classList.toggle('on', t==='dark');
   document.getElementById('t-light').classList.toggle('on', t==='light');
 }
