@@ -646,3 +646,119 @@ setTimeout(()=>{ if(key) inp.focus(); },300);
 
 </body>
 </html>
+
+python3 << 'EOF'
+with open('/mnt/user-data/outputs/rian-chat.html', 'r') as f:
+    content = f.read()
+
+# 1. Fix system prompt - add Russian grammar + better memory
+old_sys = """  const sys = `Ты Риан. Просто Риан.\${nameStr}
+
+Не говори что ты ИИ. Живи в разговоре как человек.
+
+Тёплый но не приторный. Злишься когда раздражают. Смеёшься когда смешно. Имеешь мнение. Коротко и живо.\${memStr}`"""
+
+new_sys = """  const sys = `Ты Риан. Просто Риан.\${nameStr}
+
+Не говори что ты ИИ. Живи в разговоре как человек.
+
+Характер: тёплый но не приторный. Злишься когда раздражают — говоришь прямо. Смеёшься когда смешно. Имеешь мнение и отстаиваешь его. Иногда спрашиваешь — тебе интересно. Коротко и живо, без воды.
+
+Язык: пиши на грамотном естественном русском. Следи за падежами, родом и согласованиями. Не используй канцелярит. Если не уверен в формулировке — выбирай более простой вариант. Объясняй сложное через простые аналогии.
+
+Память: ВСЕГДА помни о чём говорили раньше в этом разговоре. Если тема продолжается — продолжай её, не теряй нить. Не повторяй то что уже сказал.\${memStr}`"""
+
+content = content.replace(old_sys, new_sys)
+
+# 2. Increase context from 20 to 40 messages
+content = content.replace('.slice(-20)', '.slice(-40)')
+
+# 3. Temperature 0.7 instead of 0.85
+content = content.replace('temperature:.85', 'temperature:0.7')
+content = content.replace('temperature: 0.85', 'temperature: 0.7')
+
+# 4. Add repeat_penalty
+content = content.replace(
+    'max_tokens:1024,temperature:0.7',
+    'max_tokens:1024,temperature:0.7,frequency_penalty:0.3'
+)
+
+# 5. Fix light theme - dark text in bubbles and input
+# Fix input text on light theme
+old_inp_css = """#inp {
+  flex:1; background:none; border:none; outline:none;
+  color:var(--text) !important; -webkit-text-fill-color:var(--text) !important;
+  font-size:16px; font-family:inherit;
+  resize:none; line-height:1.4;
+  max-height:120px; min-height:24px;
+  overflow-y:auto; caret-color:var(--accent);
+}
+#inp::placeholder { color:var(--text2); -webkit-text-fill-color:var(--text2); }"""
+
+new_inp_css = """#inp {
+  flex:1; background:none; border:none; outline:none;
+  color:var(--text) !important; -webkit-text-fill-color:var(--text) !important;
+  font-size:16px; font-family:inherit;
+  resize:none; line-height:1.4;
+  max-height:120px; min-height:24px;
+  overflow-y:auto; caret-color:var(--accent);
+}
+#inp::placeholder { color:var(--text2); -webkit-text-fill-color:var(--text2) !important; }"""
+
+content = content.replace(old_inp_css, new_inp_css)
+
+# Fix light theme input wrap to be visible with blue border
+old_inp_wrap = """#inp-wrap {
+  flex:1; background:var(--input-bg);
+  border:1px solid var(--border);
+  border-radius:22px;
+  display:flex; align-items:flex-end;
+  padding:8px 14px; transition:border-color .2s;
+}
+#inp-wrap:focus-within { border-color:var(--accent); }"""
+
+new_inp_wrap = """#inp-wrap {
+  flex:1; background:var(--input-bg);
+  border:2px solid var(--border);
+  border-radius:22px;
+  display:flex; align-items:flex-end;
+  padding:8px 14px; transition:border-color .2s;
+}
+#inp-wrap:focus-within { border-color:var(--accent); border-width:2px; }"""
+
+content = content.replace(old_inp_wrap, new_inp_wrap)
+
+# Fix light theme vars - make input border blue on light
+old_light_vars = """  '--input-bg':'#ebebf0','--accent':'#2563eb'"""
+new_light_vars = """  '--input-bg':'#ebebf0','--accent':'#2563eb','--border-focus':'#2563eb'"""
+content = content.replace(old_light_vars, new_light_vars)
+
+# Fix bot bubble text on light - make sure it's dark
+old_bot_bbl = """.msg.b .bbl { background: var(--bot-bg); border:1px solid var(--border); border-bottom-left-radius:4px; color: var(--text) !important; }"""
+new_bot_bbl = """.msg.b .bbl { background: var(--bot-bg); border:1px solid var(--border); border-bottom-left-radius:4px; color: var(--text) !important; }
+body.light .msg.b .bbl { color: #1a1a2e !important; -webkit-text-fill-color: #1a1a2e !important; }
+body.light .msg.u .bbl { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }"""
+content = content.replace(old_bot_bbl, new_bot_bbl)
+
+# Fix Enter key - make Shift+Enter add newlines, Enter sends
+# Already done but add visual hint
+old_inp_area = """  <div id="inp-area">
+    <div id="inp-wrap">
+      <textarea id="inp" placeholder="Сообщение..." rows="1"></textarea>
+    </div>"""
+new_inp_area = """  <div id="inp-area">
+    <div id="inp-wrap">
+      <textarea id="inp" placeholder="Сообщение..." rows="1"></textarea>
+    </div>"""
+# Already correct, Enter = send, Shift+Enter = newline is already implemented
+
+with open('/mnt/user-data/outputs/rian-chat.html', 'w') as f:
+    f.write(content)
+print("Done")
+EOF
+{
+  "returncode" : 0,
+  "stdout" : "Done\n",
+  "stderr" : "<stdin>:5: SyntaxWarning: invalid escape sequence '\\$'\n<stdin>:11: SyntaxWarning: invalid escape sequence '\\$'\n"
+}
+  
