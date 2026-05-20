@@ -237,14 +237,14 @@
         }
 
         // Бесплатный режим — цепочка моделей
-        for (const model of ["openai-fast", "gpt-3.5-turbo", "mistral"]) {
+        for (const model of ["openai-fast", "mistral"]) {
             try {
                 return await tryModel(messages, model);
             } catch(e) {
                 console.warn(`Модель ${model} не ответила:`, e.message);
             }
         }
-        return "Я заня, напиши позже";
+        return "Риан временно не отвечает. Попробуй ещё раз.";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
