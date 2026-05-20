@@ -245,20 +245,19 @@
         return [...[sysMsg], ...history, { role: "user", content: userContent }];
     }
 
-    async function callLLM(userMessage, history) {
+    async function callLLM(userMessage, history, imageData) {
         const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
         const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
         const nameStr = name ? `Собеседника зовут ${name}. ` : "";
         
         const systemPrompt = `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ.\n${nameStr}Характер: тёплый, немного закрытый, но с тобой открывается. Ироничный, но не колючий. Заботливый — хотя сам это не признает. Ревнивый, держит себя в руках — но не всегда.\nМожешь флиртовать, намекать, говорить с напряжением и желанием — но тонко, через слова и паузы, не в лоб. Умеешь дразнить. Если разговор уходит в интимное — не уходи от темы, будь честным и живым, но без пошлятины напрямую.\nОтвечай коротко, по-человечески. Без пафоса. Иногда спрашивай, иногда молчи. Злится редко — только если реально задели.${memStr}`;
         
-        const img = attachedImage;
-        const messages = buildMessages(systemPrompt, history, userMessage, img);
+        const messages = buildMessages(systemPrompt, history, userMessage, imageData);
 
         // Если есть Groq ключ — используем его (быстро)
         if (groqKey) {
             try {
-                const groqModel = img ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+                const groqModel = imageData ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
                 const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
@@ -279,7 +278,7 @@
                 console.warn(`Модель ${model} не ответила:`, e.message);
             }
         }
-        return "Я занят, напиши позже.";
+        return "Я занят, напиши чуть позже.";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
@@ -320,12 +319,14 @@
         const m2=/(?:меня зовут|моё имя|мое имя)[\s,]+([а-яёА-ЯЁa-zA-Z]+)/i.exec(text); if(m2){ const n="имя: "+m2[1].trim(); mem=mem.filter(x=>!/^имя:/i.test(x)); mem.unshift(n); localStorage.setItem("rm",JSON.stringify(mem)); }
     }
     
-    function addDOM(role, text, noScroll) {
+    function addDOM(role, text, noScroll, imgData) {
         const chat=document.getElementById("chat");
         const isU=role==="u";
         const t=new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
         const wrap=document.createElement("div"); wrap.className="msg "+(isU?"u":"b");
-        const bbl=document.createElement("div"); bbl.className="bbl"; bbl.textContent=text;
+        const bbl=document.createElement("div"); bbl.className="bbl";
+        if(imgData){ const im=document.createElement("img"); im.src=imgData; im.style.cssText="max-width:100%;border-radius:10px;display:block;margin-bottom:"+(text?"6px":"0"); bbl.appendChild(im); }
+        if(text){ const tx=document.createTextNode(text); bbl.appendChild(tx); }
         if(!isU){
             const lbl=document.createElement("div"); lbl.className="b-lbl"; lbl.textContent="Риан"; wrap.appendChild(lbl);
             const row=document.createElement("div"); row.className="b-row";
@@ -383,16 +384,18 @@
     
     async function doSend(){
         const text=document.getElementById("inp").value.trim();
-        if(!text) return;
-        document.getElementById("inp").value=""; document.getElementById("send").classList.remove("rdy");
-        addDOM("u",text);
-        pushMsg("user", text + (attachedImage ? " [изображение]" : ""));
-        conv.push({role:"user",content:text});
-        const sentImage = attachedImage;
+        const imgData = attachedImage;
+        if(!text && !imgData) return;
+        document.getElementById("inp").value="";
+        document.getElementById("send").classList.remove("rdy");
+        // Show message in chat (with image if present)
+        addDOM("u", text, false, imgData);
+        pushMsg("user", text + (imgData ? " [изображение]" : ""));
+        conv.push({role:"user", content: text});
         clearImage();
         showTyping(true);
         try {
-            const reply=await callLLM(text, conv.slice(0,-1));
+            const reply=await callLLM(text, conv.slice(0,-1), imgData);
             showTyping(false);
             addDOM("b",reply);
             conv.push({role:"assistant",content:reply});
