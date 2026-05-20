@@ -176,6 +176,19 @@
     let theme = localStorage.getItem("th") || "dark";
     let typingEl = null;
 
+    async function tryModel(messages, model) {
+        const response = await fetch("https://text.pollinations.ai/openai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 150, private: true })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const reply = data.choices?.[0]?.message?.content?.trim();
+        if (!reply) throw new Error("Пустой ответ");
+        return reply;
+    }
+
     async function callLLM(userMessage, history) {
         const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
         const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
@@ -188,28 +201,16 @@
             ...history,
             { role: "user", content: userMessage }
         ];
-        
-        try {
-            const response = await fetch("https://text.pollinations.ai/openai", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "openai",
-                    messages: messages,
-                    temperature: 0.85,
-                    max_tokens: 300,
-                    private: true
-                })
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            const reply = data.choices?.[0]?.message?.content?.trim();
-            if (reply && reply.length > 0) return reply;
-            throw new Error("Пустой ответ");
-        } catch(e) {
-            console.error("API ошибка:", e);
-            return "Риан временно не отвечает. Попробуй ещё раз.";
+
+        // Основная — быстрая, запасная — другая модель
+        for (const model of ["openai-fast", "gpt-3.5-turbo", "mistral"]) {
+            try {
+                return await tryModel(messages, model);
+            } catch(e) {
+                console.warn(`Модель ${model} не ответила:`, e.message);
+            }
         }
+        return "Риан временно не отвечает. Попробуй ещё раз.";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
