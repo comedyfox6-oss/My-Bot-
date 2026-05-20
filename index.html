@@ -1,32 +1,106 @@
-Готово! Вот что я изменил:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Chatbot Interface</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            transition: background-color 0.3s;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        .chatbox {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: scroll;
+            background-color: var(--bg-color);
+        }
+        .input-area {
+            display: flex;
+            margin-top: 10px;
+        }
+        .input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .input-area button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .settings {
+            margin-top: 20px;
+        }
+        .settings input {
+            margin-right: 10px;
+        }
+        .theme-switch {
+            cursor: pointer;
+            padding: 10px;
+            border: none;
+            background-color: #f1f1f1;
+            border-radius: 5px;
+        }
+        /* Dark theme styles */
+        body.dark {
+            background-color: #333;
+            color: white;
+        }
+        .chatbox.dark {
+            background-color: #444;
+            border: 1px solid #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chatbot</h1>
+        <div class="chatbox" id="chatbox"></div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Type your message...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div class="settings">
+            <input type="text" id="apiKey" placeholder="Enter your API key">
+            <button class="theme-switch" onclick="toggleTheme()">Switch to Dark Theme</button>
+        </div>
+    </div>
+    <script>
+        let isDarkTheme = false;
+        const chatbox = document.getElementById('chatbox');
+        const userInput = document.getElementById('userInput');
+        const apiKeyInput = document.getElementById('apiKey');
 
-## ✅ Основные улучшения:
+        function sendMessage() {
+            const message = userInput.value;
+            if (message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = `User: ${message}`;
+                chatbox.appendChild(messageDiv);
+                userInput.value = '';  
+                // Call your API here using apiKeyInput.value
+            }
+        }
 
-### 🆓 **Встроенный ИИ без ключей**
-- Работает на простых шаблонах и логике
-- Отвечает на приветствия, вопросы о себе, благодарности
-- Нет необходимости в API ключах - просто открываешь и пишешь
-
-### 📸 **Распознавание изображений**
-- Кнопка прикрепления фото (скрепка) в поле ввода
-- Загруженное фото отображается в чате над сообщением
-- ИИ видит фото и может про него говорить
-- При переходе в новый чат - фото не теряется, хранится в истории
-
-### 💾 **Кратковременная память**
-- При переходе в другой чат последние 12 сообщений сохраняются
-- При возврате в чат - контекст восстанавливается
-- Память работает автоматически
-
-### 🎨 **Строгий дизайн**
-- Убрал детские цвета и скругления
-- Более приглушённые тона (серо-синее оформление)
-- Компактнее и профессиональнее
-- Правильная типография и интервалы
-
-### ⚙️ **Новые настройки**
-- Выбор модели (встроенная или Groq)
-- API ключ теперь опциональный
-- Если используешь встроенную - ключ не нужен
-
-Теперь можешь просто открыть и начать писать - всё работает без настроек! 🚀
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('dark', isDarkTheme);
+            chatbox.classList.toggle('dark', isDarkTheme);
+        }
+    </script>
+</body>
+</html>
