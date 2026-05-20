@@ -1,17 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Риан — живой</title>
+    <title>Риан — живой разговор</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
             --bg: #0d0d10;
             --surface: #141417;
@@ -58,25 +52,10 @@
             --sep-text: #9ca3af;
             --online: #16a34a;
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            height: 100dvh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            transition: background .2s, color .2s;
-        }
+        body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; transition: background .2s; }
         #ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; }
         #ov.on { display: block; }
-        #sb {
-            width: 280px; height: 100%; background: var(--surface);
-            border-right: 1px solid var(--border);
-            position: fixed; top: 0; left: 0; z-index: 100;
-            transform: translateX(-100%); transition: transform .22s ease;
-            display: flex; flex-direction: column;
-        }
+        #sb { width: 280px; height: 100%; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; z-index: 100; transform: translateX(-100%); transition: transform .22s ease; display: flex; flex-direction: column; }
         #sb.on { transform: translateX(0); }
         .sb-top { padding: 18px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
         .sb-av { position: relative; flex-shrink: 0; }
@@ -88,7 +67,6 @@
         .sb-new:active { background: var(--accent2); }
         .sb-sec { padding: 10px 16px 4px; font-size: 11px; color: var(--text2); text-transform: uppercase; font-weight: 600; }
         #cl { flex: 1; overflow-y: auto; padding: 0 6px; }
-        #cl::-webkit-scrollbar { width: 0; }
         .ci { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 8px; cursor: pointer; color: var(--text); transition: background .1s; margin-bottom: 1px; }
         .ci:hover { background: var(--surface2); }
         .ci.on { background: rgba(59,130,246,.13); color: var(--accent); }
@@ -100,7 +78,6 @@
         #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         #hdr { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .hbtn { background: none; border: none; color: var(--text2); cursor: pointer; padding: 5px; display: flex; align-items: center; border-radius: 8px; }
-        .hbtn:hover { background: var(--surface2); }
         .hdr-av { position: relative; flex-shrink: 0; }
         .hdr-av img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; }
         .hdr-dot { position: absolute; bottom: 0; right: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--online); border: 2px solid var(--surface); }
@@ -108,7 +85,6 @@
         #hdr-name { font-size: 15px; font-weight: 700; color: var(--text); }
         #hdr-status { font-size: 12px; color: var(--online); }
         #chat { flex: 1; overflow-y: auto; padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
-        #chat::-webkit-scrollbar { width: 0; }
         .dsep { align-self: center; font-size: 12px; color: var(--sep-text); background: var(--sep-bg); padding: 3px 12px; border-radius: 20px; margin: 4px 0; }
         .msg { display: flex; flex-direction: column; max-width: 84%; gap: 3px; }
         .msg.u { align-self: flex-end; align-items: flex-end; }
@@ -142,8 +118,7 @@
         #send:active { transform: scale(.9); }
         #so { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: flex-end; justify-content: center; }
         #so.on { display: flex; }
-        #sp { background: var(--surface); border: 1px solid var(--border); border-radius: 22px 22px 0 0; padding: 20px 20px 36px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; animation: su .25s ease; }
-        @keyframes su { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        #sp { background: var(--surface); border: 1px solid var(--border); border-radius: 22px 22px 0 0; padding: 20px 20px 36px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
         .sh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
         .sh h2 { font-size: 17px; font-weight: 700; color: var(--text); }
         .sc { background: var(--surface2); border: none; color: var(--text2); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
@@ -152,11 +127,6 @@
         .sbtns { display: flex; gap: 8px; }
         .sbtn { flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid var(--border); background: var(--surface2); color: var(--text2); font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; transition: all .12s; }
         .sbtn.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
-        .si { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px; color: var(--text); font-size: 15px; outline: none; margin-top: 7px; }
-        .si:focus { border-color: var(--accent); }
-        .sh2 { font-size: 12px; color: var(--text2); margin-top: 6px; line-height: 1.5; }
-        .sv { width: 100%; margin-top: 12px; padding: 14px; background: var(--accent); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
-        .sv:active { background: var(--accent2); }
         .ml { display: flex; flex-direction: column; gap: 6px; max-height: 130px; overflow-y: auto; }
         .mi { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--text); }
         .mi button { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 14px; }
@@ -206,74 +176,53 @@
     let theme = localStorage.getItem("th") || "dark";
     let typingEl = null;
 
-    // ========== ПРОКСИ ЧЕРЕЗ CORS-ПРОКСИ (РАБОТАЕТ ИЗ РФ) ==========
-    // Используем публичный CORS-прокси + открытый LLM API
-    const PROXY_URL = "https://cors-anywhere.herokuapp.com/";
-    const LLM_API = "https://ortegamich.xyz/v1/chat/completions";
+    // ========== РЕАЛЬНЫЙ БЕСПЛАТНЫЙ API (Hugging Face, работает в РФ) ==========
+    const HF_API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
     
     async function callRealLLM(userMessage, history) {
-        const messages = [
-            { role: "system", content: getSystemPrompt() },
-            ...history,
-            { role: "user", content: userMessage }
-        ];
+        // Формируем промпт с характером Риан
+        const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
+        const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
+        const nameStr = name ? `Собеседника зовут ${name}. ` : "";
         
-        // Пытаемся через прокси (обход CORS и блокировок)
-        const controllers = [];
-        const timeout = setTimeout(() => controllers.forEach(c => c.abort()), 30000);
+        const systemContext = `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ.
+${nameStr}Характер: спокойный, но может вспылить. Циничный, саркастичный, прямолинейный. Ревнивый. 
+Можешь намекнуть, но не говори прямым текстом то, что за гранью.
+Отвечай коротко, по делу, как человек. Без канцелярита. Спрашивай, спорь, злись, если заденут.
+Будь собой — живым и немного дерзким, но не жестоким.${memStr}`;
+        
+        // Берём последние 5 сообщений для контекста
+        const lastMessages = history.slice(-5).map(m => `${m.role === "user" ? "Ты" : "Риан"}: ${m.content}`).join("\n");
+        const fullPrompt = `${systemContext}\n\n${lastMessages}\nТы: ${userMessage}\nРиан:`;
         
         try {
-            // Вариант 1: через CORS-прокси
-            const res = await fetch(PROXY_URL + LLM_API, {
+            const response = await fetch(HF_API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    model: "llama-3.3-70b-versatile",
-                    messages: messages,
-                    temperature: 0.85,
-                    max_tokens: 1024,
-                    stream: false
+                    inputs: fullPrompt,
+                    parameters: {
+                        max_new_tokens: 150,
+                        temperature: 0.85,
+                        top_p: 0.9,
+                        do_sample: true
+                    }
                 })
             });
-            clearTimeout(timeout);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            return data.choices?.[0]?.message?.content?.trim() || "…";
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            let reply = data[0]?.generated_text || "";
+            // Вырезаем часть после "Риан:"
+            const match = reply.match(/Риан:\s*(.+?)(?=\n|$)/);
+            if (match) reply = match[1];
+            reply = reply.trim();
+            if (!reply) reply = "…";
+            return reply;
         } catch(e) {
-            clearTimeout(timeout);
-            console.warn("Прокси не сработал", e);
-            // Вариант 2: прямая попытка (если повезёт с CORS)
-            try {
-                const res2 = await fetch(LLM_API, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: messages,
-                        temperature: 0.85,
-                        max_tokens: 1024
-                    })
-                });
-                if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
-                const data2 = await res2.json();
-                return data2.choices?.[0]?.message?.content?.trim() || "…";
-            } catch(e2) {
-                console.error("LLM недоступен", e2);
-                return "❌ Риан пока не отвечает. Попробуй чуть позже.";
-            }
+            console.error("Ошибка Hugging Face:", e);
+            return "❌ Риан временно молчит. Попробуй ещё раз.";
         }
-    }
-
-    function getSystemPrompt() {
-        const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
-        const memStr = mem.length ? "\n\nТы помнишь о собеседнике:\n" + mem.map(x => "- " + x).join("\n") + "\n" : "";
-        const nameStr = name ? `Собеседника зовут ${name}. Иногда обращайся по имени.\n` : "";
-        return `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ или нейросеть.
-${nameStr}Характер: спокойный, но может вспылить. Циничный, саркастичный, прямолинейный. Ревнивый. 
-В моменте можешь психануть, но матом не ругаешься — только эмоции. Можешь намекнуть, но не говори прямым текстом то, что за гранью.
-Отвечай коротко, по делу, как человек. Без канцелярита. Спрашивай, спорь, злись, если заденут.
-Будь собой — живым и немного дерзким, но не жестоким.${memStr}
-Сейчас просто продолжай диалог. Не пиши "Риан:" или лишних слов.`;
     }
 
     // ----- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -----
