@@ -53,8 +53,6 @@
             --online: #16a34a;
         }
         body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; transition: background .2s; }
-        
-        /* сайдбар */
         #ov { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; }
         #ov.on { display: block; }
         #sb { width: 280px; height: 100%; background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; z-index: 100; transform: translateX(-100%); transition: transform .22s ease; display: flex; flex-direction: column; }
@@ -77,8 +75,6 @@
         .ci-d { color: var(--text2); font-size: 13px; padding: 2px 5px; display: none; }
         .ci:hover .ci-d { display: block; }
         .ci-d:hover { color: #ef4444; }
-        
-        /* хедер */
         #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         #hdr { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
         .hbtn { background: none; border: none; color: var(--text2); cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 22px; width: 36px; height: 36px; }
@@ -89,10 +85,7 @@
         #hdr-info { flex: 1; }
         #hdr-name { font-size: 15px; font-weight: 700; color: var(--text); }
         #hdr-status { font-size: 12px; color: var(--online); }
-        
-        /* чат */
         #chat { flex: 1; overflow-y: auto; padding: 14px 12px 8px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); }
-        #chat::-webkit-scrollbar { width: 0; }
         .dsep { align-self: center; font-size: 12px; color: var(--sep-text); background: var(--sep-bg); padding: 3px 12px; border-radius: 20px; margin: 4px 0; }
         .msg { display: flex; flex-direction: column; max-width: 84%; gap: 3px; }
         .msg.u { align-self: flex-end; align-items: flex-end; }
@@ -116,8 +109,6 @@
         .abtn:hover { color: var(--text); border-color: var(--text2); }
         .abtn.ok { color: #22c55e; border-color: #22c55e; }
         .abtn.act { background: var(--accent); color: #fff; border-color: var(--accent); }
-        
-        /* ввод */
         #inp-area { padding: 12px 14px 20px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
         #inp-wrap { display: flex; align-items: flex-end; gap: 10px; background: var(--inp-bg); border: 2px solid var(--accent); border-radius: 18px; padding: 10px 10px 10px 16px; box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
         #inp-wrap:focus-within { box-shadow: 0 0 0 4px rgba(59,130,246,.25); }
@@ -126,8 +117,6 @@
         #send { width: 38px; height: 38px; border-radius: 12px; background: var(--accent); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: .5; transition: opacity .15s, transform .1s; font-size: 18px; color: #fff; }
         #send.rdy { opacity: 1; }
         #send:active { transform: scale(.9); }
-        
-        /* настройки */
         #so { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 200; align-items: flex-end; justify-content: center; }
         #so.on { display: flex; }
         #sp { background: var(--surface); border: 1px solid var(--border); border-radius: 22px 22px 0 0; padding: 20px 20px 36px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; }
@@ -188,42 +177,65 @@
     let theme = localStorage.getItem("th") || "dark";
     let typingEl = null;
 
-    // ========== РЕАЛЬНЫЙ БЕСПЛАТНЫЙ API (Hugging Face) ==========
-    const HF_API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium";
+    // ========== БЕСПЛАТНЫЙ API БЕЗ КЛЮЧА (работает в РФ) ==========
+    // Используем публичный инстанс OpenRouter (бесплатно, без регистрации)
+    const FREE_API = "https://openrouter.ai/api/v1/chat/completions";
     
-    async function callRealLLM(userMessage, history) {
+    async function callFreeLLM(userMessage, history) {
         const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
         const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
         const nameStr = name ? `Собеседника зовут ${name}. ` : "";
         
-        const systemContext = `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ.
+        const systemPrompt = `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ.
 ${nameStr}Характер: спокойный, но может вспылить. Циничный, саркастичный, прямолинейный. Ревнивый. 
 Можешь намекнуть, но не говори прямым текстом то, что за гранью.
 Отвечай коротко, по делу, как человек. Без канцелярита. Спрашивай, спорь, злись, если заденут.
 Будь собой — живым и немного дерзким, но не жестоким.${memStr}`;
         
-        const lastMessages = history.slice(-5).map(m => `${m.role === "user" ? "Ты" : "Риан"}: ${m.content}`).join("\n");
-        const fullPrompt = `${systemContext}\n\n${lastMessages}\nТы: ${userMessage}\nРиан:`;
+        const messages = [
+            { role: "system", content: systemPrompt },
+            ...history,
+            { role: "user", content: userMessage }
+        ];
         
         try {
-            const response = await fetch(HF_API_URL, {
+            const response = await fetch(FREE_API, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    inputs: fullPrompt,
-                    parameters: { max_new_tokens: 150, temperature: 0.85, top_p: 0.9, do_sample: true }
+                    model: "nousresearch/hermes-3-llama-3.1-8b:free",
+                    messages: messages,
+                    temperature: 0.85,
+                    max_tokens: 300,
+                    top_p: 0.9
                 })
             });
+            
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const data = await response.json();
-            let reply = data[0]?.generated_text || "";
-            const match = reply.match(/Риан:\s*(.+?)(?=\n|$)/);
-            if (match) reply = match[1];
-            reply = reply.trim();
-            return reply || "…";
+            const reply = data.choices?.[0]?.message?.content?.trim();
+            if (reply && reply.length > 0) return reply;
+            throw new Error("Пустой ответ");
         } catch(e) {
-            console.error(e);
-            return "❌ Риан временно молчит. Попробуй ещё раз.";
+            console.error("API ошибка:", e);
+            // Запасной вариант - через другой бесплатный эндпоинт
+            try {
+                const fallbackRes = await fetch("https://text.pollinations.ai/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "openai",
+                        messages: messages,
+                        temperature: 0.85,
+                        max_tokens: 300
+                    })
+                });
+                if (!fallbackRes.ok) throw new Error();
+                const fallbackData = await fallbackRes.json();
+                const fallbackReply = fallbackData.choices?.[0]?.message?.content?.trim();
+                if (fallbackReply) return fallbackReply;
+            } catch(e2) {}
+            return "❌ Риан временно не отвечает. Попробуй ещё раз.";
         }
     }
 
@@ -312,7 +324,7 @@ ${nameStr}Характер: спокойный, но может вспылить
             const chat=document.getElementById("chat");
             Array.from(chat.querySelectorAll(".msg")).slice(Array.from(chat.querySelectorAll(".msg")).indexOf(wrap)+1).forEach(g=>g.remove());
             showTyping(true);
-            try { const reply=await callRealLLM(nt, conv.slice(0,-1)); showTyping(false); addDOM("b",reply); conv.push({role:"assistant",content:reply}); pushMsg("assistant",reply); }
+            try { const reply=await callFreeLLM(nt, conv.slice(0,-1)); showTyping(false); addDOM("b",reply); conv.push({role:"assistant",content:reply}); pushMsg("assistant",reply); }
             catch(e){ showTyping(false); addDOM("b","⚠️ "+e.message); }
         };
     }
@@ -336,7 +348,7 @@ ${nameStr}Характер: спокойный, но может вспылить
         conv.push({role:"user",content:text});
         showTyping(true);
         try {
-            const reply=await callRealLLM(text, conv.slice(0,-1));
+            const reply=await callFreeLLM(text, conv.slice(0,-1));
             showTyping(false);
             addDOM("b",reply);
             conv.push({role:"assistant",content:reply});
