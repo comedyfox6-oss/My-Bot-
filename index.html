@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Риан — живой разговор</title>
+    <title>Риан — живой</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -177,11 +177,12 @@
     let theme = localStorage.getItem("th") || "dark";
     let typingEl = null;
 
-    // ========== БЕСПЛАТНЫЙ API БЕЗ КЛЮЧА (работает в РФ) ==========
-    // Используем публичный инстанс OpenRouter (бесплатно, без регистрации)
-    const FREE_API = "https://openrouter.ai/api/v1/chat/completions";
+    // ========== РАБОТАЮЩИЙ API БЕЗ КЛЮЧА (через внешний прокси) ==========
+    // Используем публичный прокси, который работает из РФ
+    const PROXY_URL = "https://cors-proxy.ally.wiki/";
+    const API_URL = "https://openrouter.ai/api/v1/chat/completions";
     
-    async function callFreeLLM(userMessage, history) {
+    async function callRealLLM(userMessage, history) {
         const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
         const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
         const nameStr = name ? `Собеседника зовут ${name}. ` : "";
@@ -198,45 +199,43 @@ ${nameStr}Характер: спокойный, но может вспылить
             { role: "user", content: userMessage }
         ];
         
+        const requestBody = {
+            model: "nousresearch/hermes-3-llama-3.1-8b:free",
+            messages: messages,
+            temperature: 0.85,
+            max_tokens: 300,
+            top_p: 0.9
+        };
+        
+        // Пробуем через прокси
         try {
-            const response = await fetch(FREE_API, {
+            const response = await fetch(PROXY_URL + API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    model: "nousresearch/hermes-3-llama-3.1-8b:free",
-                    messages: messages,
-                    temperature: 0.85,
-                    max_tokens: 300,
-                    top_p: 0.9
-                })
+                body: JSON.stringify(requestBody)
             });
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            const reply = data.choices?.[0]?.message?.content?.trim();
-            if (reply && reply.length > 0) return reply;
-            throw new Error("Пустой ответ");
-        } catch(e) {
-            console.error("API ошибка:", e);
-            // Запасной вариант - через другой бесплатный эндпоинт
-            try {
-                const fallbackRes = await fetch("https://text.pollinations.ai/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: "openai",
-                        messages: messages,
-                        temperature: 0.85,
-                        max_tokens: 300
-                    })
-                });
-                if (!fallbackRes.ok) throw new Error();
-                const fallbackData = await fallbackRes.json();
-                const fallbackReply = fallbackData.choices?.[0]?.message?.content?.trim();
-                if (fallbackReply) return fallbackReply;
-            } catch(e2) {}
-            return "❌ Риан временно не отвечает. Попробуй ещё раз.";
-        }
+            if (response.ok) {
+                const data = await response.json();
+                const reply = data.choices?.[0]?.message?.content?.trim();
+                if (reply) return reply;
+            }
+        } catch(e) { console.log("Прокси не сработал", e); }
+        
+        // Прямой запрос (если повезёт с CORS)
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const reply = data.choices?.[0]?.message?.content?.trim();
+                if (reply) return reply;
+            }
+        } catch(e) { console.log("Прямой запрос не сработал", e); }
+        
+        return "❌ Риан временно не отвечает. Попробуй ещё раз.";
     }
 
     // ----- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ -----
@@ -324,7 +323,7 @@ ${nameStr}Характер: спокойный, но может вспылить
             const chat=document.getElementById("chat");
             Array.from(chat.querySelectorAll(".msg")).slice(Array.from(chat.querySelectorAll(".msg")).indexOf(wrap)+1).forEach(g=>g.remove());
             showTyping(true);
-            try { const reply=await callFreeLLM(nt, conv.slice(0,-1)); showTyping(false); addDOM("b",reply); conv.push({role:"assistant",content:reply}); pushMsg("assistant",reply); }
+            try { const reply=await callRealLLM(nt, conv.slice(0,-1)); showTyping(false); addDOM("b",reply); conv.push({role:"assistant",content:reply}); pushMsg("assistant",reply); }
             catch(e){ showTyping(false); addDOM("b","⚠️ "+e.message); }
         };
     }
@@ -348,7 +347,7 @@ ${nameStr}Характер: спокойный, но может вспылить
         conv.push({role:"user",content:text});
         showTyping(true);
         try {
-            const reply=await callFreeLLM(text, conv.slice(0,-1));
+            const reply=await callRealLLM(text, conv.slice(0,-1));
             showTyping(false);
             addDOM("b",reply);
             conv.push({role:"assistant",content:reply});
