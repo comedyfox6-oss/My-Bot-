@@ -272,8 +272,11 @@
             } catch(e) { console.warn("Groq не ответил:", e.message); }
         }
 
-        // Бесплатный режим — при картинке GPT-4o (vision), иначе fast
-        const freeChain = imageData ? ["openai", "openai-fast"] : ["openai-fast", "mistral"];
+        // Бесплатный режим — картинки только через Groq key
+        if (imageData && !groqKey) {
+            return "Хм. Не могу открыть — нет ключа для этого. Вставь Groq ключ в настройках, тогда смогу смотреть фото.";
+        }
+        const freeChain = ["openai-fast", "mistral"];
         for (const model of freeChain) {
             try {
                 return await tryModel(messages, model);
@@ -281,7 +284,7 @@
                 console.warn(`Модель ${model} не ответила:`, e.message);
             }
         }
-        return "Я занят,напиши позже";
+        return "Я занят. напиши позже";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
