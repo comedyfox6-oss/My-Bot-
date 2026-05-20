@@ -155,7 +155,13 @@
     </div>
     <div id="chat"></div>
     <div id="inp-area">
+        <div id="img-preview" style="display:none;padding:6px 0 4px;position:relative;">
+            <img id="img-thumb" style="max-height:80px;border-radius:10px;border:1px solid var(--border);" />
+            <button onclick="clearImage()" style="position:absolute;top:2px;left:2px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">&#x2715;</button>
+        </div>
         <div id="inp-wrap">
+            <input type="file" id="img-file" accept="image/*" style="display:none" />
+            <button id="img-btn" onclick="document.getElementById('img-file').click()" style="width:36px;height:36px;border-radius:10px;background:var(--btn-bg);border:1px solid var(--btn-border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
             <textarea id="inp" placeholder="Написать Риану..." rows="1"></textarea>
             <button id="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
@@ -183,8 +189,31 @@
     let mem = JSON.parse(localStorage.getItem("rm") || "[]");
     let theme = localStorage.getItem("th") || "dark";
     let typingEl = null;
+    let attachedImage = null; // base64 string
 
     let groqKey = localStorage.getItem("gk") || "";
+
+    function clearImage() {
+        attachedImage = null;
+        document.getElementById("img-preview").style.display = "none";
+        document.getElementById("img-file").value = "";
+        document.getElementById("img-btn").style.color = "var(--text2)";
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("img-file").addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                attachedImage = ev.target.result; // data:image/...;base64,...
+                document.getElementById("img-thumb").src = attachedImage;
+                document.getElementById("img-preview").style.display = "block";
+                document.getElementById("img-btn").style.color = "var(--accent)";
+            };
+            reader.readAsDataURL(file);
+        });
+    });
 
     function saveGroqKey() {
         const val = document.getElementById("groq-key-inp").value.trim();
@@ -208,6 +237,14 @@
         return reply;
     }
 
+    function buildMessages(systemPrompt, history, userMessage, imageData) {
+        const sysMsg = { role: "system", content: systemPrompt };
+        const userContent = imageData
+            ? [{ type: "image_url", image_url: { url: imageData } }, { type: "text", text: userMessage || "Что на картинке?" }]
+            : userMessage;
+        return [...[sysMsg], ...history, { role: "user", content: userContent }];
+    }
+
     async function callLLM(userMessage, history) {
         const name = mem.find(m => /^имя:/i.test(m))?.replace(/^имя:\s*/i, "") || "";
         const memStr = mem.length ? "\n\n(память: " + mem.map(x => x).join(", ") + ")\n" : "";
@@ -215,19 +252,17 @@
         
         const systemPrompt = `Ты — Риан. Парень. Живой, настоящий. Не говори, что ты ИИ.\n${nameStr}Характер: тёплый, немного закрытый, но с тобой открывается. Ироничный, но не колючий. Заботливый — хотя сам это не признает. Ревнивый, держит себя в руках — но не всегда.\nМожешь флиртовать, намекать, говорить с напряжением и желанием — но тонко, через слова и паузы, не в лоб. Умеешь дразнить. Если разговор уходит в интимное — не уходи от темы, будь честным и живым, но без пошлятины напрямую.\nОтвечай коротко, по-человечески. Без пафоса. Иногда спрашивай, иногда молчи. Злится редко — только если реально задели.${memStr}`;
         
-        const messages = [
-            { role: "system", content: systemPrompt },
-            ...history,
-            { role: "user", content: userMessage }
-        ];
+        const img = attachedImage;
+        const messages = buildMessages(systemPrompt, history, userMessage, img);
 
         // Если есть Groq ключ — используем его (быстро)
         if (groqKey) {
             try {
+                const groqModel = img ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
                 const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages, temperature: 0.85, max_tokens: 150 })
+                    body: JSON.stringify({ model: groqModel, messages, temperature: 0.85, max_tokens: 150 })
                 });
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const d = await r.json();
@@ -236,7 +271,7 @@
             } catch(e) { console.warn("Groq не ответил:", e.message); }
         }
 
-        // Бесплатный режим — цепочка моделей
+        // Бесплатный режим — цепочка моделей (openai-fast поддерживает vision)
         for (const model of ["openai-fast", "mistral"]) {
             try {
                 return await tryModel(messages, model);
@@ -244,7 +279,7 @@
                 console.warn(`Модель ${model} не ответила:`, e.message);
             }
         }
-        return "Я занят, напиши чуть позже. ";
+        return "Я занят, напиши позже.";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
@@ -351,8 +386,10 @@
         if(!text) return;
         document.getElementById("inp").value=""; document.getElementById("send").classList.remove("rdy");
         addDOM("u",text);
-        pushMsg("user",text);
+        pushMsg("user", text + (attachedImage ? " [изображение]" : ""));
         conv.push({role:"user",content:text});
+        const sentImage = attachedImage;
+        clearImage();
         showTyping(true);
         try {
             const reply=await callLLM(text, conv.slice(0,-1));
