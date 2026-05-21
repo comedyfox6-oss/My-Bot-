@@ -327,21 +327,30 @@
             }
         }
 
-        // Лама вперёд, ГПТ в хвост
-        for (const model of ["deepseek", "llama", "llama-scaleway", "openai-fast", "openai"]) {
+        // Сначала пробуем воркер (Groq через Cloudflare)
+        try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 10000);
+            const r = await fetch("https://hidden-truth-760a.comedyfox6.workers.dev", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ messages }),
+                signal: ctrl.signal
+            });
+            clearTimeout(timer);
+            if (r.ok) {
+                const d = await r.json();
+                const reply = d.choices?.[0]?.message?.content?.trim();
+                if (reply) return reply;
+            }
+        } catch(e) { console.warn("Воркер не ответил:", e.message); }
+
+        // Запасная цепочка через pollinations
+        for (const model of ["deepseek", "llama", "openai-fast", "openai"]) {
             try {
                 return await tryModel(messages, model);
             } catch(e) {
                 console.warn(`Модель ${model} не ответила:`, e.message);
-            }
-        }
-        // Pollinations не ответил — пробуем альтернативы
-        console.warn("Pollinations не ответил, пробуем альтернативы...");
-        for (const endpointFn of ENDPOINTS.slice(1)) {
-            try {
-                return await tryEndpoint(() => endpointFn(null, messages));
-            } catch(e) {
-                console.warn("Альтернативный эндпоинт не ответил:", e.message);
             }
         }
         return "Не отвечает. Попробуй ещё раз.";
