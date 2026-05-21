@@ -215,26 +215,43 @@
 
 
 
+    function updateImgBtn() {
+        const btn = document.getElementById("img-btn");
+        if (!btn) return;
+        btn.style.opacity = groqKey ? "1" : "0.3";
+        btn.title = groqKey ? "Отправить фото" : "Нужен Groq ключ для фото";
+    }
+
     function saveGroqKey() {
         const val = document.getElementById("groq-key-inp").value.trim();
         groqKey = val;
         localStorage.setItem("gk", val);
         const st = document.getElementById("groq-key-status");
-        if (val) { st.textContent = "Ключ сохранён. Будет использован Groq."; st.style.color = "#22c55e"; }
-        else { st.textContent = "Ключ удалён. Используется бесплатный режим."; st.style.color = "var(--text2)"; }
+        if (val) { st.textContent = "Ключ сохранён. Фото работает."; st.style.color = "#22c55e"; }
+        else { st.textContent = "Ключ удалён. Фото недоступно."; st.style.color = "var(--text2)"; }
+        updateImgBtn();
     }
 
-    async function tryModel(messages, model) {
-        const response = await fetch("https://text.pollinations.ai/openai", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 150, private: true })
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content?.trim();
-        if (!reply) throw new Error("Пустой ответ");
-        return reply;
+    async function tryModel(messages, model, timeoutMs=9000) {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+        try {
+            const response = await fetch("https://text.pollinations.ai/openai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 150, private: true }),
+                signal: ctrl.signal
+            });
+            clearTimeout(timer);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            const reply = data.choices?.[0]?.message?.content?.trim();
+            if (!reply) throw new Error("Пустой ответ");
+            return reply;
+        } catch(e) {
+            clearTimeout(timer);
+            throw e;
+        }
     }
 
     function buildMessages(systemPrompt, history, userMessage, imageData) {
@@ -259,32 +276,53 @@
         // Если есть Groq ключ — используем его (быстро)
         if (groqKey) {
             try {
-                const groqModel = imageData ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+                const groqModel = imageData ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile";
+                const groqCtrl = new AbortController();
+                const groqTimer = setTimeout(() => groqCtrl.abort(), 12000);
                 const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                    body: JSON.stringify({ model: groqModel, messages, temperature: 0.85, max_tokens: 150 })
+                    body: JSON.stringify({ model: groqModel, messages, temperature: 0.85, max_tokens: 150 }),
+                    signal: groqCtrl.signal
                 });
+                clearTimeout(groqTimer);
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 const d = await r.json();
                 const reply = d.choices?.[0]?.message?.content?.trim();
                 if (reply) return reply;
-            } catch(e) { console.warn("Groq не ответил:", e.message); }
+            } catch(e) {
+                console.warn("Groq не ответил:", e.message);
+                // Try smaller vision model as fallback
+                if (imageData) {
+                    try {
+                        const r2 = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
+                            body: JSON.stringify({ model: "llama-3.2-11b-vision-preview", messages, temperature: 0.85, max_tokens: 150 })
+                        });
+                        if (r2.ok) {
+                            const d2 = await r2.json();
+                            const r2reply = d2.choices?.[0]?.message?.content?.trim();
+                            if (r2reply) return r2reply;
+                        }
+                    } catch(e2) { console.warn("Groq fallback failed:", e2.message); }
+                }
+            }
         }
 
         // Бесплатный режим — картинки только через Groq key
         if (imageData && !groqKey) {
-            return "Хм. Не могу открыть — нет ключа для этого. Вставь Groq ключ в настройках, тогда смогу смотреть фото.";
+            return "Фото не открою без ключа. Вставь Groq ключ в настройках.";
         }
-        const freeChain = ["openai-fast", "mistral"];
-        for (const model of freeChain) {
+        // Лама вперёд, ГПТ в хвост
+        for (const model of ["deepseek", "llama", "llama-scaleway", "openai-fast", "openai"]) {
             try {
                 return await tryModel(messages, model);
             } catch(e) {
                 console.warn(`Модель ${model} не ответила:`, e.message);
             }
         }
-        return "Я занят. напиши позже";
+        return "Я занят, напиши позже";
     }
 
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
@@ -574,6 +612,7 @@
         }).catch(e => console.warn("SW failed:", e));
     }
     if (proactiveEnabled) scheduleProactive();
+    updateImgBtn();
 </script>
 </body>
 </html>
