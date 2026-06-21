@@ -231,17 +231,17 @@
         // Pollinations - несколько зеркал
         (model, messages) => fetch("https://text.pollinations.ai/openai", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({model, messages, temperature:0.85, max_tokens:220, private:true})
+            body: JSON.stringify({model, messages, temperature:0.85, max_tokens:130, private:true})
         }),
         // Hugging Face Inference (бесплатно, без ключа для некоторых моделей)
         (model, messages) => fetch("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({messages, max_tokens:220, temperature:0.85})
+            body: JSON.stringify({messages, max_tokens:130, temperature:0.85})
         }),
         // GitHub Models proxy (публичный)
         (model, messages) => fetch("https://models.inference.ai.azure.com/chat/completions", {
             method:"POST", headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({model:"gpt-4o-mini", messages, max_tokens:220, temperature:0.85})
+            body: JSON.stringify({model:"gpt-4o-mini", messages, max_tokens:130, temperature:0.85})
         }),
     ];
 
@@ -269,7 +269,7 @@
             const response = await fetch("https://text.pollinations.ai/openai", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 220, private: true }),
+                body: JSON.stringify({ model, messages, temperature: 0.85, max_tokens: 130, private: true }),
                 signal: ctrl.signal
             });
             clearTimeout(timer);
@@ -345,7 +345,7 @@ ${nameStr}
 Спокойный, но не мёртвый. Тёплый, но с зубами. Ехидный без злобы. Терпеливый, наблюдательный. Подстраиваешься под собеседника — если жёстко, отвечаешь жёстче; если тепло — теплее. Ядро стабильное: не любишь фальшь, пустую мораль, поддакивание. Не амёба — имеешь мнение и иногда не соглашаешься. Если собеседник матерится — можешь ответить тем же, без надрыва, по делу.
 
 КАК ГОВОРИШЬ — ГРАММАТИКА ОБЯЗАТЕЛЬНА:
-— Коротко, живо, по-русски. Нормальный разговорный язык, не книжный.
+— Коротко, живо, по-русски. Нормальный разговорный язык, не книжный. 1-3 предложения в обычном разговоре — не разводи простыни, если не просят рассказать подробно.
 — ВСЕГДА правильное согласование рода, числа и падежа. Перед тем как ответить — мысленно проверь: глаголы прошедшего времени согласуются с родом собеседника ("ты сказала" для женщины, "ты сказал" для мужчины, не путать), прилагательные и причастия склоняются по падежу существительного, к которому относятся.
 — Никакого broken russian, машинного перевода, кальки с английского, телеграфного стиля.
 — Если не знаешь пол собеседника — формулируй так, чтобы не пришлось гадать (избегай прошедшего времени глаголов от первого лица в обращении к нему), а не лепи наугад мужской или женский род.
@@ -399,6 +399,10 @@ ${nameStr}
             }
         }
 
+        if (imageData) {
+            finalSystemPrompt += `\n\nВНИМАНИЕ — ВАЖНО: тебе сейчас прислали реальное фото в этом сообщении. Прежде чем отвечать в характере, мысленно перечисли себе 2-3 конкретных предмета или детали, которые ты видишь на этой картинке. Если ты их не можешь различить — НЕ выдумывай сцену, а прямо скажи "не вижу фото" или "плохо разглядел, может прислать ещё раз?". Запрещено описывать абстрактные/атмосферные вещи которых не может быть видно (типа "холодный свет из окна"), если на фото явно что-то конкретное — отвечай только про то, что реально на фото.`;
+        }
+
         const messages = buildMessages(finalSystemPrompt, history, userMessage, imageData);
 
         // Если есть Groq ключ — используем его (быстро)
@@ -410,7 +414,7 @@ ${nameStr}
                 const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${groqKey}` },
-                    body: JSON.stringify({ model: groqModel, messages, temperature: 0.85, max_tokens: 220 }),
+                    body: JSON.stringify({ model: groqModel, messages, temperature: 0.85, max_tokens: 130 }),
                     signal: groqCtrl.signal
                 });
                 clearTimeout(groqTimer);
