@@ -324,7 +324,10 @@
     function buildMessages(systemPrompt, history, userMessage, imageData) {
         const sysMsg = { role: "system", content: systemPrompt };
         const userContent = imageData
-            ? [{ type: "image_url", image_url: { url: imageData } }, { type: "text", text: userMessage || "Что на картинке?" }]
+            ? [
+                { type: "text", text: userMessage || "Опиши что на этой фотографии — конкретно, что видишь." },
+                { type: "image_url", image_url: { url: imageData } }
+              ]
             : userMessage;
         // С картинкой — не тащим историю, она только путает модель
         const ctx = imageData ? [] : history;
@@ -381,6 +384,7 @@ ${nameStr}
 — Лучше короткое "не знаю" или "не помню такого", чем уверенный выдуманный ответ.
 — Никогда не придумывай события, слова или действия собеседника, которых не было в разговоре — даже если кажется что "примерно так могло быть".
 — Не дорисовывай детали, которых нет в фото или тексте, который тебе прислали — если что-то не видно или не написано, так и скажи.
+— Если тебе прислали фото — описывай только то, что РЕАЛЬНО видишь на нём конкретно: предметы, цвета, текст на упаковках, обстановку. Если изображение не загрузилось или ты не можешь разобрать что на нём — прямо скажи "не вижу фото" или "картинка не загрузилась", а не сочиняй правдоподобную, но выдуманную сцену.
 
 ВАЙБ: ночной разговор, полутемно, длинные мысли, иногда глубоко, иногда просто рядом.${memStr}`;
 
@@ -638,27 +642,42 @@ ${nameStr}
     // ----- ГОЛОС -----
     let recognition = null;
     let isRecording = false;
+    let recSafetyTimer = null;
 
     function initSpeech() {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SR) return null;
         const r = new SR();
         r.lang = "ru-RU";
-        r.continuous = false;
+        r.continuous = true;
         r.interimResults = true;
         return r;
     }
 
+    function resetMicUI() {
+        isRecording = false;
+        clearTimeout(recSafetyTimer);
+        const btn = document.getElementById("btn-mic");
+        if (btn) btn.classList.remove("rec");
+    }
+
     function toggleRecording() {
-        if (!recognition) recognition = initSpeech();
-        if (!recognition) { alert("Голосовой ввод не поддерживается в этом браузере"); return; }
         const btn = document.getElementById("btn-mic");
         const inp = document.getElementById("inp");
 
+        // Если уже идёт запись — останавливаем и сразу сбрасываем UI,
+        // не полагаясь на onend (он ненадёжен в iOS Safari)
         if (isRecording) {
-            recognition.stop();
+            try { recognition && recognition.stop(); } catch(e) {}
+            resetMicUI();
             return;
         }
+
+        // Пересоздаём объект распознавания каждый раз — на iOS Safari
+        // повторное использование одного instance иногда зависает намертво
+        try { recognition && recognition.abort(); } catch(e) {}
+        recognition = initSpeech();
+        if (!recognition) { alert("Голосовой ввод не поддерживается в этом браузере"); return; }
 
         let baseText = inp.value;
         if (baseText && !baseText.endsWith(" ")) baseText += " ";
@@ -673,23 +692,29 @@ ${nameStr}
             inp.value = baseText + final + interim;
             inp.dispatchEvent(new Event("input"));
         };
-        recognition.onend = () => {
-            isRecording = false;
-            btn.classList.remove("rec");
-        };
+        recognition.onend = resetMicUI;
         recognition.onerror = (e) => {
-            isRecording = false;
-            btn.classList.remove("rec");
             if (e.error !== "no-speech" && e.error !== "aborted") {
                 console.warn("Speech error:", e.error);
             }
+            resetMicUI();
         };
 
         try {
             recognition.start();
             isRecording = true;
             btn.classList.add("rec");
-        } catch(e) { console.warn("Speech start failed:", e); }
+            // Защита: если через 60 сек UI всё ещё "красный" — принудительно сбрасываем,
+            // чтобы интерфейс точно не остался залипшим
+            clearTimeout(recSafetyTimer);
+            recSafetyTimer = setTimeout(() => {
+                try { recognition && recognition.stop(); } catch(e) {}
+                resetMicUI();
+            }, 60000);
+        } catch(e) {
+            console.warn("Speech start failed:", e);
+            resetMicUI();
+        }
     }
 
     document.getElementById("btn-mic").onclick = toggleRecording;
